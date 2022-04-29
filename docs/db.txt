@@ -1,0 +1,26 @@
+Postgres database
+create user draft_user with login;
+create database draft with owner=draft_user;
+alter user draft_user with password 's3cr3t';
+
+
+Drivers:
+Summary - Use pymysql, it will be so much easier.
+1. mysqlclient - require mysqlclient c library.
+2. MySQLdb is a thin python wrapper around C module which implements API for MySQL database.
+3. mysql-python doesn't support Python3 but is promising it soon (May 2020)
+4. pymsql is a pure python driver. Has fewest dependencies.
+5. mysq-connector-python is pure sql and written by MySQL. Slowest.
+
+
+create user dd_api identified by 'NmjBavDhn8senXbU';
+create user dd_api@localhost identified by 'NmjBavDhn8senXbU';
+grant all on draftdodger.* to dd_api@localhost;
+
+
+
+SET FOREIGN_KEY_CHECKS = 0;
+truncate player;
+truncate division;
+truncate conference;
+SET FOREIGN_KEY_CHECKS = 1;

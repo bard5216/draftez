@@ -1,0 +1,28 @@
+{% extends "base_w_nav.html" %}
+
+{% block content %}
+<form action="" method="post">
+    {{ form.csrf_token }}
+
+    <div class="settings-form">
+        <h1>Settings</h1>
+        {{form.user_count.label(class="uk-form-label")}}
+        {{form.user_count(class="uk-input")}}
+
+        {{form.isopen.label(class="uk-form-label")}}
+        {{form.isopen(class="uk-checkbox")}}
+
+        {{form.current_round.label(class="uk-form-label")}}
+        {{form.current_round(class="uk-input")}}
+
+        {{form.max_rounds.label(class="uk-form-label")}}
+        {{form.max_rounds(class="uk-input")}}
+
+        {{form.invite_password.label(class="uk-form-label")}}
+        {{form.invite_password(class="uk-input")}}
+
+        {{form.submit(class="uk-button uk-button-primary")}}
+    </div>
+</form>
+{{form.errors}}
+{% endblock %}

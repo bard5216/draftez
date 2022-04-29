@@ -1,0 +1,305 @@
+{% extends "bulma_alpine_base.html" %}
+
+{% block content %}
+<div x-data=draftApp() 
+     x-on:draft-status.window="status_handler($event.detail)"
+     x-on:draft-pick.window="draft_handler($event.detail)"
+     x-init=init()
+>
+    {% include "partials/navbar.html" %}
+    <div 
+        x-show="status.current_user.id == me.id" 
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 transform scale-90"
+        x-transition:enter-end="opacity-100 transform scale-100"
+        x-transition:leave="transition ease-in duration-300"
+        x-transition:leave-start="opacity-100 transform scale-100"
+        x-transition:leave-end="opacity-0 transform scale-90"
+    >
+        {% include "partials/search_tool.html" %}
+    </div>
+    {% include "components/toast_component.html" %}
+    <div style="display:flex;overflow-x: scroll; padding: 1em;border-bottom: 4px solid lightgray;">
+        <template x-for="user of users" :key="user.id">
+            <div class="card" style="width: 20em;margin:1em;min-width:20em;">
+                <header class="card-header">
+                    <span 
+                        x-text="user.pos" 
+                        class="tag " 
+                        :class="{'is-success': status.current_user['id'] == user.id, 
+                                 'is-dark': status.current_user['id'] != user.id,
+                                 'is-warning': status.next_user['id'] == user.id}"
+                        style="margin: 1px .5em 0 1px;">
+                    </span>
+                    <p x-text="user.display_name" class="title is-4"></p>
+                </header>
+                <div class="card-content" style="height: 10rem;padding: .2rem;">
+                    <template x-for="pick of user.picks" :key="pick.round">
+                        <table style="line-height: 1.2;width:100%">
+                            <tr>
+                                <td x-text="pick.round" style="text-align:right;width:2rem;padding-right:1rem;"></td>
+                                <td x-text="pick.player"></td>
+                                <td style="width: 4rem; text-align: right;padding-right:1rem;"></td>
+                            </tr>
+                        </table>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <div x-data=teamRosters() x-init=init()>
+        <div style="display:flex;overflow-x: scroll; padding: 1em;border-bottom: 4px solid lightgray;">
+            <template x-for="team in team_list" :key="team">
+                <div style="margin: 1px;">
+                    <span 
+                        x-text="team.abbrev" 
+                        class="tag is-light"
+                        :class="{'is-dark': team.selected}"
+                        style="cursor: pointer;" 
+                        @click="toggleTeam(team)">
+                    </span>
+                </div>
+            </template>
+        </div>
+        <div style="display:flex;overflow-x: scroll; padding: 1em;">
+            <template x-for="team in rosters_showing" :key="team">
+                <div class="card" style="width: 25rem;min-width:25rem;margin-right: 1rem;">
+                    <header 
+                        x-text="team.name"
+                        class="card-header" 
+                        style="padding:.2rem 1rem;">
+                    </header>
+                    <div class="card-content" style="padding: .5rem 1rem;">
+                        <template x-for="(player, index) in team.roster" :key="index">
+                            <div x-text="index"></div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script src="{{url_for('static', filename='js/sse-event-handlers.js')}}"></script>
+<script src="{{url_for('static', filename='js/toast_handler.js')}}"></script>
+
+<script>
+window.teamRosters = function() {
+    return {
+        teams: {},
+        team_list: [],
+        rosters_showing: [],
+        init() {
+            fetch('/api/teams')
+            .then(response => response.json())
+            .then(response => {
+                console.log("init.teams: ", response);
+                let team_list = response.results;
+                for (t of team_list) {
+                    // console.log(`team. id=${t.id},abbrev=${t.abbrev}`);
+                    this.teams[t.id] = t
+                }
+                this.team_list = team_list
+            });
+        },
+        toggleTeam(team) {
+            console.log(`toggleTeam: id=${team.id},selected=${team.selected}`);
+            team.selected = ! team.selected;
+            if (team.selected) {
+                if (! this.teams[team.id].roster) {
+                    fetch(`/api/rosters/${team.id}`)
+                    .then(response => response.json())
+                    .then(response => {
+                        let t = response.results;
+                        // console.log("loadead ",team.id);
+                        console.log("loadead", t);
+                        this.teams[t.id].roster = t.roster;
+                    });
+                } else {
+                    console.log("Showing already loaded roster");
+                }
+                // this.rosters_showing.push(this.teams[team.id]);
+                this.rosters_showing.push(team);
+            } else {
+                // remove team.id from rosters_showing
+                // let idx = this.rosters_showing.indexOf(team.id);
+                let idx = -1;
+                for (i = 0; i<this.rosters_showing.length; i++) {
+                    let t = this.rosters_showing[i];
+                    if (t.id == team.id) {
+                        idx = i;
+                        break;
+                    }
+                }
+                console.log(`Hiding team roster id=${team.id},index=${idx}`);
+                this.rosters_showing.splice(idx, 1);
+            }
+        }
+    }
+}
+
+/*
+window.toastHandler = function() {
+    return {
+        notices: [],
+        visible: [],
+        add(notice) {
+            console.log("toastHandler.add: ", notice);
+            notice.id = Date.now()
+            this.notices.push(notice)
+            this.fire(notice.id)
+        },
+        fire(id) {
+            this.visible.push(this.notices.find(notice => notice.id == id))
+            // const timeShown = 2000 * this.visible.length
+            const timeShown = 200000 * this.visible.length
+            setTimeout(() => {
+                this.remove(id)
+            }, timeShown)
+        },
+        remove(id) {
+            const notice = this.visible.find(notice => notice.id == id)
+            const index = this.visible.indexOf(notice)
+            this.visible.splice(index, 1)
+        },
+        
+    };
+}
+*/
+
+window.draftApp = function() {
+    return {
+        me: {
+            id: "{{current_user['id']}}",
+            username: "{{current_user['username']}}",
+            display_name: "{{current_user['display_name']}}"
+        },
+        /* navbar variables */
+        /* status: as received from the last draft_monitor event */
+        status: { 
+            round: 0,
+            statue: '',
+            current_user: {
+                id: '-',
+                name: '-'
+            },
+            next_user: {
+                id: '-',
+                name: '-'
+            }
+        },
+        status_message: 'Waiting ...',
+        pick_time: '00:00:38',
+        users: [], // This will be populated by init() or reload_users()
+        reload_users() {
+            this.init();
+        },
+        init() {
+            fetch('/api/active_users')
+            .then(response => response.json())
+            .then(response => {
+                console.log("init.active_users: ", response);
+                this.users = response.results;
+            })
+        },
+
+        /* forward: 1 -> N, back: N -> 1 */
+        draft_direction: 'forward',
+        /* show log history */
+        show_log: false,
+        show_search: true,
+        draft_handler: function() {
+            console.log("listener:",event);
+            // window.dispatchEvent(new CustomEvent('flash', {detail: 'foo'}));
+        },
+        status_handler: function(detail) {
+            console.log("monitor event received: ", detail);
+
+            if (this.status['state'] != detail.state) {
+                this.status_message = detail.state;
+            }
+            this.status = detail;
+        },
+        draft_log: [],  // not currently implemented
+
+        /***
+         * Draft component
+         * This has been moved to draft component??? Remove this????
+         */
+
+        /* value of draft pick selector */
+        draft_input: '',
+        /* the player object that was selected */
+        draft_selection: null,
+        player_search_select(p) {
+            this.draft_input = p.text;
+            this.draft_selection = p;
+            this.player_search_results = [];
+        },
+        player_search_results: [ ],
+        has_search_results() { return this.player_search_results.length > 0},
+        player_search(s) {
+            console.log(`player_search: "s"`);
+            // fetch({{url_for('api.players_json', q=s)}})
+            let uri = `/api/playersearch_json?q=${encodeURIComponent(s)}`
+            console.log(`uri=${uri}`);
+            fetch(uri, {
+                method: 'get'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(`playersearch returned: ${data.results.length} items`);
+                console.log(data);
+                this.player_search_results = data.results;
+                // NOT player_search_results = data.results;
+                // NOT this.player_search_results.append(data.results[0].name);
+            });
+        },
+        perform_pick(dispatch) {
+            /*
+            var pick = this.draft_selection;
+            fetch('/draftpick', {
+                method: 'post',
+                body: JSON.stringify({pick: pick})
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(`/draftpick returned: ${data}`);
+            });
+            */
+        },
+    }
+}
+/*
+function toggleTeam(id) {
+    console.log("showing team",id);
+    var e = document.getElementById(`team-${id}`);
+    e.style.display = ((e.style.display != 'none') ? 'none': 'block');
+}
+*/
+
+var event_source = new EventSource("/stream");
+event_source.onmessage = function(event) {
+    var data = event.data;
+    console.log("sse received with unknown event type:",data);
+}
+event_source.addEventListener('draft-status', function(event) {
+    if (event['data']) {
+        var data = JSON.parse(event['data']);
+        window.dispatchEvent(new CustomEvent("draft-status", {detail: data}));
+        //console.log("event_source.draft-status event: ", data);
+    }
+}, false);
+event_source.addEventListener('draftpick', function(event) {
+    if (event['data']) {
+        var data = JSON.parse(event['data']);
+        window.dispatchEvent(new CustomEvent("draft-pick", {detail: data}));
+    }
+}, false);
+
+</script>
+
+{% endblock scripts %}

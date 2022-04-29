@@ -1,0 +1,19 @@
+Status table is k: v. Possible values, from app.cli.admin.init_status():
+
+_status_rows = [
+    ('draft_pos', '1'),
+    ('draft_direction', 'forward'),
+    ('draftee_count', '1'),
+    ('state', 'waiting'),
+    ('round', '1'),
+    ('drafting', '2'),
+    ('rounds', '10'),
+]
+
+draft_pos: The position in the draft order of person currently picking (valid values are 1 to <draftee_count>)
+draft_direction: forward or reverse
+draftee_count: len(Users)
+state: App statue - values are: predraft, open, postdraft
+round: The current draft round. 1 - ROUNDS
+drafting: User.id of current user drafting.
+rounds: Number of rounds.

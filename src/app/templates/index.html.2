@@ -1,0 +1,304 @@
+{% extends "bulma_alpine_base.html" %}
+
+{% block navbar %}
+{% endblock navbar %}
+
+{% block content %}
+<div x-data=appState() 
+     x-on:draft-status.window="status_handler($event.detail)"
+     x-on:draft-pick.window="draft_handler($event.detail)"
+     x-init=init()
+>
+    {% include "partials/navbar.html" %}
+    <div 
+        x-show="status.current_user.id == me.id" 
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 transform scale-90"
+        x-transition:enter-end="opacity-100 transform scale-100"
+        x-transition:leave="transition ease-in duration-300"
+        x-transition:leave-start="opacity-100 transform scale-100"
+        x-transition:leave-end="opacity-0 transform scale-90"
+    >
+        {% include "partials/search_tool.html" %}
+    </div>
+    {% include "components/toast_component.html" %}
+    <div style="display:flex;overflow-x: scroll; padding: 1em;border-bottom: 4px solid lightgray;">
+        {% for u in users %}
+            <div id="user-{{u.id}}" class="card" style="width: 20em;margin:1em;min-width:20em;">
+                <header class="card-header">
+                    <span class="tag " 
+                          :class="{'is-success': status.current_user['id'] == {{u.id}}, 
+                                   'is-dark': status.current_user['id'] != {{u.id}},
+                                   'is-warning': status.next_user['id'] == {{u.id}} }"
+                          style="margin: 1px .5em 0 1px;">
+                        {{u.pos}}
+                    </span>
+                    <p class="title is-4">
+                        {{u.display_name}}
+                    </p>
+                </header>
+                <div class="card-content" style="height: 10rem;padding: .2rem;">
+                    <table style="line-height: 1.2;width:100%">
+                        {% for p in user_picks[u.display_name] %}
+                        <tr>
+                            <td style="text-align:right;width:2rem;padding-right:1rem;">{{p.round}}</td>
+                            <td class="round-{{p.round}}"></td>
+                            <td style="width: 4rem; text-align: right;padding-right:1rem;"></td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    <div x-data=rosterButtons()>
+        <div style="display:flex;overflow-x: scroll; padding: 1em;border-bottom: 4px solid lightgray;">
+            {% for t in teams %}
+            <div style="margin: 1px;">
+                <!--span class="tag is-light" style="cursor: pointer;" @click="toggleTeam({{t.id}})"-->
+                <span class="tag is-light" :class="{'is-dark': {{t.abbrev}} == true }" style="cursor: pointer;" 
+                    @click="{{t.abbrev}} = ! {{t.abbrev}}">
+                    {{t.abbrev}}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+        <div style="display:flex;overflow-x: scroll; padding: 1em;">
+            {% for t in teams %}
+            <div id="team-{{t.id}}" x-show="{{t.abbrev}}"
+                    class="card" style="width: 25rem;min-width:25rem;margin-right: 1rem;">
+                <header class="card-header" style="padding:.2rem 1rem;">
+                    {{t.name}}
+                </header>
+                <div class="card-content" style="padding: .5rem 1rem;">
+                    <table style="width: 100%">
+                        <thead>
+                            <th>Name</th>
+                            <th>POS</th>
+                            <th>GP</th>
+                            <th>G</th>
+                            <th>A</th>
+                            <th>P</th>
+                        </thead>
+                        <tbody>
+                        {% for p in rosters[t.id] %}
+                            <tr id="player-{{p.id}}">
+                                <td>{{p.full_name}}</td>
+                                <td>{{p.position}}</td>
+                                <td>{{p.games}}</td>
+                                <td>{{p.goals}}</td>
+                                <td>{{p.assists}}</td>
+                                <td>{{p.points}}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div> <!-- roster() -->
+</div> <!-- appState() -->
+{% endblock content %}
+
+{% block scripts %}
+<script src="{{url_for('static', filename='js/sse-event-handlers.js')}}"></script>
+<script src="{{url_for('static', filename='js/toast_handler.js')}}"></script>
+
+<script>
+window.rosterButtons = function() {
+    return {
+        'ANA': false,
+        'ARI': false,
+        'BOS': false,
+        'BUF': false,
+        'CAR': false,
+        'CBJ': false,
+        'CGY': false,
+        'CHI': false,
+        'COL': false,
+        'DAL': false,
+        'DET': false,
+        'EDM': false,
+        'FLA': false,
+        'LAK': false,
+        'MIN': false,
+        'MTL': false,
+        'NJD': false,
+        'NSH': false,
+        'NYI': false,
+        'NYR': false,
+        'OTT': false,
+        'PHI': false,
+        'PIT': false,
+        'SJS': false,
+        'STL': false,
+        'TBL': false,
+        'TOR': false,
+        'VAN': false,
+        'VGK': false,
+        'WPG': false,
+        'WSH': false,
+    }
+}
+
+/*
+window.toastHandler = function() {
+    return {
+        notices: [],
+        visible: [],
+        add(notice) {
+            console.log("toastHandler.add: ", notice);
+            notice.id = Date.now()
+            this.notices.push(notice)
+            this.fire(notice.id)
+        },
+        fire(id) {
+            this.visible.push(this.notices.find(notice => notice.id == id))
+            // const timeShown = 2000 * this.visible.length
+            const timeShown = 200000 * this.visible.length
+            setTimeout(() => {
+                this.remove(id)
+            }, timeShown)
+        },
+        remove(id) {
+            const notice = this.visible.find(notice => notice.id == id)
+            const index = this.visible.indexOf(notice)
+            this.visible.splice(index, 1)
+        },
+        
+    };
+}
+*/
+
+window.appState = function() {
+    return {
+        me: {
+            id: "{{current_user['id']}}",
+            username: "{{current_user['username']}}",
+            display_name: "{{current_user['display_name']}}"
+        },
+        /* navbar variables */
+        /* status: as received from the last draft_monitor event */
+        status: { 
+            round: 0,
+            statue: '',
+            current_user: {
+                id: '-',
+                name: '-'
+            },
+            next_user: {
+                id: '-',
+                name: '-'
+            }
+        },
+        status_message: 'Waiting ...',
+        pick_time: '00:00:38',
+        init() {
+            fetch('/api/active_users')
+            .then(response => response.json())
+            .then(response => {
+                console.log("init.active_users: ", response);
+
+            })
+
+
+        },
+
+        /* forward: 1 -> N, back: N -> 1 */
+        draft_direction: 'forward',
+        /* show log history */
+        show_log: false,
+        show_search: true,
+        draft_handler: function() {
+            console.log("listener:",event);
+            // window.dispatchEvent(new CustomEvent('flash', {detail: 'foo'}));
+        },
+        status_handler: function(detail) {
+            console.log("monitor event received: ", detail);
+
+            if (this.status['state'] != detail.state) {
+                this.status_message = detail.state;
+            }
+            this.status = detail;
+        },
+        draft_log: [],  // not currently implemented
+
+        /***
+         * Draft component
+         * This has been moved to draft component??? Remove this????
+         */
+
+        /* value of draft pick selector */
+        draft_input: '',
+        /* the player object that was selected */
+        draft_selection: null,
+        player_search_select(p) {
+            this.draft_input = p.text;
+            this.draft_selection = p;
+            this.player_search_results = [];
+        },
+        player_search_results: [ ],
+        has_search_results() { return this.player_search_results.length > 0},
+        player_search(s) {
+            console.log(`player_search: "s"`);
+            // fetch({{url_for('api.players_json', q=s)}})
+            let uri = `/api/playersearch_json?q=${encodeURIComponent(s)}`
+            console.log(`uri=${uri}`);
+            fetch(uri, {
+                method: 'get'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(`playersearch returned: ${data.results.length} items`);
+                console.log(data);
+                this.player_search_results = data.results;
+                // NOT player_search_results = data.results;
+                // NOT this.player_search_results.append(data.results[0].name);
+            });
+        },
+        perform_pick(dispatch) {
+            /*
+            var pick = this.draft_selection;
+            fetch('/draftpick', {
+                method: 'post',
+                body: JSON.stringify({pick: pick})
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(`/draftpick returned: ${data}`);
+            });
+            */
+        },
+    }
+}
+/*
+function toggleTeam(id) {
+    console.log("showing team",id);
+    var e = document.getElementById(`team-${id}`);
+    e.style.display = ((e.style.display != 'none') ? 'none': 'block');
+}
+*/
+
+var event_source = new EventSource("/stream");
+event_source.onmessage = function(event) {
+    var data = event.data;
+    console.log("sse received with unknown event type:",data);
+}
+event_source.addEventListener('draft-status', function(event) {
+    if (event['data']) {
+        var data = JSON.parse(event['data']);
+        window.dispatchEvent(new CustomEvent("draft-status", {detail: data}));
+        //console.log("event_source.draft-status event: ", data);
+    }
+}, false);
+event_source.addEventListener('draftpick', function(event) {
+    if (event['data']) {
+        var data = JSON.parse(event['data']);
+        window.dispatchEvent(new CustomEvent("draft-pick", {detail: data}));
+    }
+}, false);
+
+</script>
+
+{% endblock scripts %}

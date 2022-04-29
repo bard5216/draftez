@@ -1,0 +1,8 @@
+bower install select2
+
+With a bower config file, bower packages are by default installed to src/components/
+
+select2 has thus been installed to <project-dir>/src/src/components/select2
+The dist parts in dist/js and dist/css under the component's install dir.
+
+Should use flask-assets to copy those files to the appropriate directory.

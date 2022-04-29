@@ -1,0 +1,16 @@
+<div style="border: 1px solid grey; padding: .5em;">
+{% if players | length < 30 %}
+    {% for p in players %}
+        <form>
+            <input type="hidden" name="player_id" value="{{p.id}}">
+            <a href="#confirm-modal" uk-toggle>{{p.full_name}}</a>
+            <!--div class="entry" hx-post="/draftpick" hx-trigger="click">
+                <div style="display:inline-block;width: 4em;"> {{p.team.abbrev}} </div>
+                <div style="display:inline-block;"> {{p.full_name}} </div>
+            </div-->
+        </form>
+    {% endfor %}
+{% else %}
+    <div style="font-weight: 500;padding:.5em .25em;">Too many results.</div>
+{% endif %}
+</div>

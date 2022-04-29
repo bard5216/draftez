@@ -1,0 +1,47 @@
+{% block doc -%}
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml"{% block html_attribs %}{% endblock html_attribs %}>
+    {%- block html %}
+    <head>
+    {%- block metas %}
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta http-equiv="Content-Language" content="en">
+        <meta name="google" content="notranslate">
+    {%- endblock metas %}
+    {%- block head %}
+        <title>{% block title %}{{title|default}}{% endblock title %}</title>
+
+        <script src="{{url_for('static', filename='js/jquery-3.5.1.min.js')}}"></script>
+        <script src="{{url_for('static', filename='js/htmx_1.2.1.js')}}"></script>
+        <script src="{{url_for('static', filename='js/uikit.js')}}"></script>
+        <script src="{{url_for('static', filename='js/uikit-icons.js')}}"></script>
+        <script src="{{url_for('static', filename='js/_hyperscript.min.js')}}"></script>
+        <script src="{{url_for('static', filename='js/select2.min.js')}}"></script>
+
+        {%- block styles %}
+        <link href="{{url_for('static', filename='css/uikit.css')}}" rel="stylesheet">
+        <link href="{{url_for('static', filename='css/select2.min.css')}}" rel="stylesheet">
+        <link href="{{url_for('static', filename='css/app.css')}}" rel="stylesheet">
+        {%- endblock styles %}
+
+    {%- endblock head %}
+    </head>
+    <body{% block body_attribs %}{% endblock body_attribs %}>
+        {% block body -%}
+            <div style="display: flex; flex-direction: column; width: 100%">
+                {% block navbar %}
+                    {% include "partials/navbar.html" %}
+                {%- endblock navbar %}
+                {% block content -%}
+                {%- endblock content %}
+            </div>
+            {% block scripts %}
+            {%- endblock scripts %}
+        {%- endblock body %}
+    </body>
+    {%- endblock html %}
+
+</html>
+{% endblock doc -%}

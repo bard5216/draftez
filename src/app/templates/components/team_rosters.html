@@ -1,0 +1,116 @@
+
+<div x-init="load_teams()"
+    x-data='{
+        teams: {},
+        team_tags: [],
+        rosters_showing: [],
+
+        load_teams() {
+            fetch(`{{url_for("api.get_teams")}}`)
+            .then(response => response.json())
+            .then(response => {
+                console.log("init.teams: ", response);
+                for (t of response.results) {
+                    // console.log(`team. id=${t.id},abbrev=${t.abbrev}`);
+                    t["roster"] = [];
+                    this.teams[t.id] = t;
+                    this.team_tags.push({id: t.id, abbrev: t.abbrev, selected: false});
+                }
+            });
+        },
+        teams_sorted() {
+            return Object.values(this.teams).sort((a, b) => (a.abbrev > b.abbrev) ? 1: -1);
+        },
+        toggleTeam(team_id) {
+            let team = this.teams[team_id];
+            console.log(`toggleTeam4: ${team.name}`);
+            if (! team.selected) {
+                if (team.roster.length == 0) {
+                    let url = `{{url_for("api.team_roster", team_id=0)}}`;
+                    console.log(`template url=${url}`);
+                    url = url.replace("0", team_id);
+                    console.log(`url=${url} , should have team_id=${team_id}`);
+                    fetch(url)
+                    .then(response => response.json())
+                    .then(response => {
+                        let t = response.results;
+                        // console.log("loadead ",team.id);
+                        console.log("loadead roster", t);
+                        // this.teams[t.id].roster = t.roster;
+                        for (r of response.results.roster) {
+                            team.roster.push(r);
+                        }
+                        // team.roster = t.roster;
+                        team.selected = ! team.selected;
+                        this.rosters_showing.push(team.id);
+                    });
+                } else {
+                    console.log("Showing already loaded roster");
+                    team.selected = ! team.selected;
+                    this.rosters_showing.push(team.id);
+                }
+            } else{
+                team.selected = ! team.selected;
+                let idx = -1;
+                for (i = 0; i<this.rosters_showing.length; i++) {
+                    if (this.rosters_showing[i] == team.id) {
+                        idx = i;
+                        break;
+                    }
+                }
+                console.log(`Hiding team roster id=${team.id},index=${idx}`);
+                this.rosters_showing.splice(idx, 1);
+            }
+        },
+    }'
+>
+    <!-- tag buttons -->
+    <div style="display:flex;overflow-x: scroll; padding: 1em;border-bottom: 4px solid lightgray;">
+        <template x-for="(tag,index) in team_tags" :key="index">
+            <div style="margin: 1px;">
+                <span 
+                    x-text="tag.abbrev" 
+                    class="tag is-light"
+                    :class="{'is-dark': teams[tag.id].selected}"
+                    style="cursor: pointer;" 
+                    @click="toggleTeam(tag.id)">
+                </span>
+            </div>
+        </template>
+    </div>
+    <div style="display:flex;overflow-x: scroll; padding: 1em;">
+        <template x-for="team_id in rosters_showing" :key="team_id">
+            <div x-show="teams[team_id].selected" class="card" style="width: 25rem;min-width:25rem;margin-right: 1rem;">
+                <header 
+                    x-text="teams[team_id].name"
+                    class="card-header" 
+                    style="padding:.2rem 1rem;">
+                </header>
+                <div class="card-content" style="padding: .5rem 1rem;">
+                    <table style="width: 100%">
+                        <thead>
+                            <th>Name</th>
+                            <th>POS</th>
+                            <th>GP</th>
+                            <th>G</th>
+                            <th>A</th>
+                            <th>P</th>
+                        </thead>
+                        <tbody>
+                            <template x-for="(player, index) in teams[team_id].roster" :key="index">
+                                <tr @click="draft_roster_player(player)">
+                                    <td x-text="player.full_name"></td>
+                                    <td x-text="player.position"></td>
+                                    <td x-text="player.games"></td>
+                                    <td x-text="player.goals"></td>
+                                    <td x-text="player.assists"></td>
+                                    <td x-text="player.points"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </template>
+    </div>
+</div>

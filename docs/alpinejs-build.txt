@@ -1,0 +1,4 @@
+Follow Quickstart from https://github.com/alpinejs/alpine to build alpinejs.
+
+Then install to app/static/js/alpinejs@X.X.X.js
+

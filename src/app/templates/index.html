@@ -1,0 +1,127 @@
+{% extends "bulma_alpine_base.html" %}
+
+{% block content %}
+<div id="DraftApp"
+    x-data='{
+        me: {
+            id: `{{current_user["id"]}}`,
+            username: `{{current_user["username"]}}`,
+            display_name: `{{current_user["display_name"]}}`
+        },
+        status: {
+            round: 0,
+            state: "Initializing",
+            drafting_user: {
+                id: "-",
+                name: "-"
+            },
+            next_user: {
+                id: "-",
+                name: "-"
+            },
+            seqno: 0,
+        },
+        show_draft_tool: false,
+        pick_time: "00:00:00",
+        users: [], // This will be populated by init() or reload_users()
+        /* forward: 1 -> N, back: N -> 1 */
+        draft_direction: "forward",
+        /* show log history */
+        show_log: true,
+        draft_log: [],  // not currently implemented
+        //show_search: true,
+
+        draft_handler: function() {
+            console.log("listener:",event);
+            window.dispatchEvent(new CustomEvent("flash", {detail: "foo"}));
+        },
+        status_handler: function(detail) {
+            console.log("status event received: ", detail);
+            console.log("current status is: ", this.status);
+
+            if (this.status.state != detail.state) this.status.state = detail.state;
+            if (this.status.drafting_user.id != detail.drafting_user.id)
+                this.status.drafting_user = detail.drafting_user;
+            if (this.status.next_user.id != detail.next_user.id)
+                this.status.next_user = detail.next_user;
+            this.status.round = detail.round;
+            this.status.state = detail.state;
+            this.status.seqno = detail.seq;
+        },
+        reload_users() {
+            this.load_users();
+        },
+        load_users() {
+            fetch(`{{url_for("api.active_users")}}`)
+            .then(response => response.json())
+            .then(response => {
+                console.log("init.active_users: ", response);
+                this.users = response.results;
+            });
+        }
+    }'
+    x-on:draft-status.window="status_handler($event.detail)"
+    x-on:draft-pick.window="draft_handler($event.detail)"
+    x-init='
+        load_users();
+        $watch("status.drafting_user.id", val => {
+            if (val == me.id) {
+                // the show doesnt do anything. It is the dispatch
+                // show_draft_tool = true;
+                $dispatch("start-draft-timer");
+            }
+        });
+    '
+>
+    {% include "components/navbar.html" %}
+    <div 
+        x-show="status.drafting_user.id == me.id" 
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 transform scale-90"
+        x-transition:enter-end="opacity-100 transform scale-100"
+        x-transition:leave="transition ease-in duration-300"
+        x-transition:leave-start="opacity-100 transform scale-100"
+        x-transition:leave-end="opacity-0 transform scale-90"
+    >
+        {% include "components/search_tool.html" %}
+    </div>
+    {% include "components/toast_component.html" %}
+    <div style="display:flex;overflow-x: scroll; padding: 1em;border-bottom: 4px solid lightgray;">
+        <template x-for="user of users" :key="user.id">
+            <div class="card" style="width: 20em;margin:1em;min-width:20em;">
+                <header class="card-header">
+                    <span 
+                        x-text="user.pos" 
+                        class="tag " 
+                        :class="{'is-success': status.drafting_user['id'] == user.id, 
+                                 'is-dark': status.drafting_user['id'] != user.id,
+                                 'is-warning': status.next_user['id'] == user.id}"
+                        style="margin: 1px .5em 0 1px;">
+                    </span>
+                    <p x-text="user.display_name" class="title is-4"></p>
+                </header>
+                <div class="card-content" style="height: 10rem;padding: .2rem;">
+                    <template x-for="pick of user.picks" :key="pick.round">
+                        <table style="line-height: 1.2;width:100%">
+                            <tr>
+                                <td x-text="pick.round" style="text-align:right;width:2rem;padding-right:1rem;"></td>
+                                <td x-text="pick.player"></td>
+                                <td style="width: 4rem; text-align: right;padding-right:1rem;"></td>
+                            </tr>
+                        </table>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    {% include "components/team_rosters.html" %}
+
+</div>
+{% endblock content %}
+
+{% block scripts %}
+
+<script src="{{url_for('static', filename='js/sse-event-handlers.js')}}"></script>
+
+{% endblock scripts %}

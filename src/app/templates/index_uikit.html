@@ -1,0 +1,122 @@
+{% extends "ui_base.html" %}
+
+{% block content %}
+{% include 'partials/confirm_modal.html' %}
+<div style="display: flex;flex-direction: row;">
+    <div id="sidebar2" hidden>
+        {% include 'partials/sidebar.html' %}
+    </div>
+
+    <div style="display:flex;flex-direction:column;width: 100%;">
+        {% include "partials/navbar.html" %}
+        <div id="draft_notices" style="font-size: 1.2em;font-weight:400;padding: 2px 6px;">
+            <!-- notices ... -->
+        </div>
+        <!--div style="width: 30em;margin: auto; padding: 2em;background-color: lightblue; border-radius: .5em;"-->
+        <div id="draft_container" style="width: 30em;margin: auto; padding: 2em;">
+            <div class="uk-text-large" style="text-align:center;">Round 1 Selection</div>
+            <div class="uk-inline" style="width:100%;">
+                <select id="player-select" name="player" style="width: 100%;"></select>
+            </div>
+        </div>
+        <div class="container">
+            <div class="uk-child-width-expand uk-grid-match" uk-grid>
+                {% for u in users %}
+                <div uk-width-1-5>
+                    <div class="uk-card uk-card-small uk-card-hover uk-card-body uk-card-default">
+                        <div class="uk-card-title">
+                            {{u.display_name}}
+                        </div>
+                        <div class="roster">
+                            <div class="title">
+                                Roster
+                            </div>
+                            {% if u.id == current_user.id %}
+                            <div>
+                                
+                                <div id="select_result">
+
+                                </div>
+                            </div>
+                            {% endif %}
+                            <div id="roster_{{u.id}}">
+                                roster items for {{u.username}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+{% block scripts %}
+<script>
+    function load_picks(user_id) {
+        /***
+         * GET picks for user user_id and output them
+         * to $("#roster_"+user_id)
+         */
+        $.get("/api/user_picks/"+user_id, function(res) {
+            $("#roster_"+user_id).html(res);
+        });
+    }
+
+    $(document).ready(function () {
+        var playerselect = $("#player-select");
+        playerselect.select2({
+            ajax: {
+                url: '/api/playersearch_json',
+                dataType: 'json'
+            }
+        });
+        playerselect.on('select2:select', function(e) {
+            let data = e.params.data;
+            window._draft_player_id = data.id;
+            console.log("selected",data);
+            $("#confirm-modal .player").html(data.name);
+            $("#confirm-modal .team").html(data.team_name);
+
+            $("#confirm-modal .ok").on("click", function() {
+                console.log("modal confirmed");
+                $("#confirm-modal .ok").off("click");
+                console.log("modal ok disabled");
+                $.ajax({
+                    url: "/api/draftpick",
+                    type: 'POST',
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    data: JSON.stringify({"player_id": window._draft_player_id}),
+                    processData: false,
+                    success: function(res) {
+                        // alert("pick successful");
+                        $("#draft_container").hide();
+                    },
+                    error: function() {
+                        alert("draft pick was not successful!!")
+                    }
+                });
+            });
+            UIkit.modal($("#confirm-modal")).show();
+        });
+    });
+    // $(document).ready(function () {
+        // var source = new EventSource("{{url_for('sse.stream')}}");
+        console.log("before create EventSource");
+        var source = new EventSource("/stream");
+        source.onmessage = function(event) {
+            var data = event.data;
+            console.log("sse received:",data);
+            alert("Server message received: "+data.message);
+        }
+        source.addEventListener('draftpick', function(event) {
+            var data = JSON.parse(event.data);
+            console.log("sse draftpick:",data);
+        }, false);
+        source.addEventListener('error', function(event) {
+            alert("Failed to connect to event stream. Is Redis running?");
+        }, false);
+    // });
+  </script>
+  {% endblock %}

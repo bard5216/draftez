@@ -1,0 +1,19 @@
+# https://flask-sse.readthedocs.io/en/latest/quickstart.html **
+# Warning
+# Server-sent events do not work with Flask’s built-in development server,
+# because it handles HTTP requests one at a time. The SSE stream is intended to
+# be an infinite stream of events, so it will never complete. If you try to run
+# this code on with the built-in development server, the server will be unable
+# to take any other requests once you connect to this stream.  Instead, you must
+# use a web server with asychronous workers. Gunicorn can work with gevent to
+# use asychronous workers: see gunicorn’s design documentation.
+
+
+gunicorn --workers=2 'app:create_app()'
+gunicorn --bind=localhost:5000 --workers=2 'app:create_app()'
+
+
+Run your code using gunicorn’s gevent workers:
+
+gunicorn --worker-class gevent --bind 127.0.0.1:8000 wsgi
+

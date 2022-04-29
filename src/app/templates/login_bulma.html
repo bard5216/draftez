@@ -1,0 +1,55 @@
+{% extends "bulma_alpine_base.html" %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --brandColor: hsl(166, 67%, 51%);
+        --background: rgb(247, 247, 247);
+        --textDark: hsla(0, 0%, 0%, 0.66);
+        --textLight: hsla(0, 0%, 0%, 0.33);
+    }
+
+    body {
+        background: var(--background);
+        height: 100vh;
+        color: var(--textDark);
+    }
+    .login {
+        border-radius: 10px;
+        padding: 2rem;
+        background: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section" style="height: 100vh;">
+    <div class="columns is-vcentered" style="height:100vh;">
+        <div class="column is-4 is-offset-4 login has-text-centered">
+            <h1 class="title">Draftez</h1>
+            <form method="post">
+            <div class="field">
+                <p class="control">
+                    <input name="email" class="input is-medium" type="email" placeholder="Email">
+                </p>
+            </div>
+            <div class="field">
+                <p class="control ">
+                    <input name="password" class="input is-medium" type="password" placeholder="Password">
+                </p>
+            </div>
+            <div class="field">
+                <p class="control">
+                    <button class="button is-primary is-fullwidth is-medium">
+                        Login
+                    </button>
+                </p>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+  {% endblock %}

@@ -1,0 +1,58 @@
+{% block doc -%}
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml"{% block html_attribs %}{% endblock html_attribs %}>
+    {%- block html %}
+    <head>
+    {%- block metas %}
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta http-equiv="Content-Language" content="en">
+        <meta name="google" content="notranslate">
+    {%- endblock metas %}
+    {%- block head %}
+        <title>{% block title %}{{title|default}}{% endblock title %}</title>
+
+        <script src="{{url_for('static', filename='js/alpine@3.10.2.js')}}" defer></script>
+
+        {%- block styles %}
+        <link href="{{url_for('static', filename='css/bulma-lumen.min.css')}}" rel="stylesheet">
+        <link href="{{url_for('static', filename='css/app.css')}}" rel="stylesheet">
+        {%- endblock styles %}
+
+    {%- endblock head %}
+    </head>
+    <body{% block body_attribs %}{% endblock body_attribs %}>
+        {% block body -%}
+            {% block navbar %}
+            {%- endblock navbar %}
+            {% block content -%}
+            {%- endblock content %}
+            {% block scripts %}
+            <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                // Get all "navbar-burger" elements
+                const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+
+                // Check if there are any navbar burgers
+                if ($navbarBurgers.length > 0) {
+                    // Add a click event on each of them
+                    $navbarBurgers.forEach( el => {
+                        el.addEventListener('click', () => {
+                            // Get the target from the "data-target" attribute
+                            const target = el.dataset.target;
+                            const $target = document.getElementById(target);
+                            // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
+                            el.classList.toggle('is-active');
+                            $target.classList.toggle('is-active');
+                        });
+                    });
+                }
+            });
+            </script>
+            {%- endblock scripts %}
+        {%- endblock body %}
+    </body>
+    {%- endblock html %}
+</html>
+{% endblock doc -%}

@@ -1,0 +1,188 @@
+<div 
+    x-data="window.searchTool()"
+    @start-draft-timer.window="
+        console.debug('draft tool received start timer event');
+        timer = 0;
+        timerId = setInterval(() => {
+            updateTimer();
+        }, 1000);
+    "
+    style="margin: 1rem 1rem 0 1rem;display:flex;flex-direction: column;"
+    class="box has-background-info" 
+>
+    <div style="display: flex; flex-direction: row; align-content: center; align-items: center;">
+        <input x-model="search_input" 
+                placeholder="type to search ..." 
+                type="text" class="input" 
+                style="max-width:30em;" 
+                @input.debounce.500="player_search(search_input)">
+        <button class="button is-link" 
+                @click="perform_pick($dispatch, $refs);"
+                style="margin-left: .5em;"
+                x-bind:disabled="player_selected == null">
+            Draft
+        </button>
+        <div style="display:inline-flex;justify-content:flex-end;align-content:center;flex-grow:300;">
+            <span></span>
+            <span x-text="timer" class="is-size-6 has-text-weight-semibold"> </span>
+        </div>
+    </div>
+    <div x-show="has_search_results()">
+        <div style="position: absolute;
+                    line-height: 1.7;
+                    background-color: white;
+                    padding: .3rem .5rem;
+                    border-style: solid;
+                    border-color: #bdbdbd;
+                    border-width: 1px 1px 4px;
+                    border-radius: 4px;
+                    width: 20rem;
+                    z-index: 999;
+                    overflow-y: scroll;
+                    cursor: pointer;
+                    max-height: 15rem;">
+            <table style="width: 100%">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Team</th>
+                        <th>GP</th>
+                        <th>G</th>
+                        <th>A</th>
+                        <th>Pts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="(player, index) in player_search_results" :key="index">
+                        <tr @click="player_search_select(player)">
+                            <td x-text="player.full_name"></td>
+                            <td x-text="player.team_abbrev"></td>
+                            <td x-text="player.games"></td>
+                            <td x-text="player.goals"></td>
+                            <td x-text="player.assists"></td>
+                            <td x-text="player.points"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal" :class="{'is-active': show_confirm_modal}">
+        <div class="modal-background"></div>
+        <div class="modal-content">
+            <div class="box">
+                <article class="media">
+                    <div class="media-left">
+                        <figure class="image">
+                            <img x-ref="team_icon" src="{{url_for('static', filename='images/edmonton-oilers.png')}}">
+                        </figure>
+                    </div>
+                    <div class="media-content">
+                        <div class="content is-size-5">
+                            Do you really want to select 
+                            <strong>
+                                <span x-ref="selected_player_name"></span>
+                            </strong>
+                            of the
+                            <strong>
+                                <span x-ref="selected_player_team"></span>
+                            </strong>
+                            ?
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; margin-right: 2rem;">
+                            <div>
+                                <button @click="show_confirm_modal=false" class="button">Yikes, No</button>
+                                <button @click="draft_selected()" style="margin-left:.5em" class="button is-success">Heck Yeah!</button>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+window.searchTool = function() {
+    return {
+        /* value of draft pick selector */
+        search_input: '',
+        /* the player object that was selected */
+        player_selected: null,
+        show_confirm_modal: false,
+        player_search_results: [],
+        _timer: 0,
+        timer: '',
+        timerId: null,
+        updateTimer() {
+            this._timer++;
+            let mins = Math.floor(this._timer/60);
+            let secs = this._timer - (mins * 60);
+            if (secs < 10) {secs = "0"+secs;}
+            this.timer = mins + ":" + secs;
+        },
+        // team_logo: null,
+        /* clicking on the drop-down ... */
+        player_search_select(player) {
+            this.search_input = player.text; /* full_name & team */
+            this.player_selected = player;
+            this.player_search_results = [];
+            // this.team_logo = player.team_name.toLowerCase().replace(' ', '-') + '.png';
+        },
+        /* results of ajax query .. */
+        has_search_results() { return this.player_search_results.length > 0 },
+        player_search(s) {
+            // console.log(`player_search: "s"`);
+            {# fetch({{url_for('api.players_json', q='0')}}) #}
+            let url =`{{url_for('api.players_json')}}?q=` + encodeURIComponent(s);
+            console.log(`search url=${url}`);
+            fetch(url, {
+                method: 'get'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.debug(`playersearch returned: ${data.results.length} items`);
+                console.debug(data);
+                this.player_search_results = data.results;
+            });
+        },
+        draft_selected() {
+            let url = `{{url_for('api.draft_player')}}`;
+            fetch(url, {
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({player: this.player_selected})
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(`/draftpick returned: ${data}`);
+                clearInterval(this.timerId);
+                this.player_selected = null;
+                this.show_confirm_modal = false;
+                this.search_input = '';
+            });
+        },
+        perform_pick(dispatch, refs) {
+            console.log("search_tool::perform_pick");
+            var player = this.player_selected;
+            var png_name = player.team_name.toLowerCase().replaceAll(' ', '-') + '.png';
+            console.log(`png_name=${png_name}`);
+            console.log("player=", player);
+            refs.selected_player_name.innerText = player.full_name;
+            refs.selected_player_team.innerText = player.team_name;
+            let src = `{{url_for('static', filename='images/0')}}`;
+            console.log(`template img src=${src}`);
+            src = src.replace('0', png_name);
+            console.log("setting src to:", src);
+            refs.team_icon['src'] = src;
+            this.show_confirm_modal = true;
+            /*
+            */
+        },
+    }
+}
+</script>

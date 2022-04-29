@@ -1,0 +1,44 @@
+{% extends "bulma_alpine_base.html" %}
+
+{% block navbar %}
+<nav class="navbar is-dark" role="navigation">
+    <div class="navbar-brand">
+        <a class="navbar-item title is-5" href={{url_for('index.index')}}>Draftee</a>
+    </div>
+    <div class="navbar-menu">
+        <div class="navbar-start">
+            <a class="navbar-item">
+                Home
+            </a>
+        </div>
+
+        <div class="navbar=end">
+            <div class="navbar-item">
+
+            </div>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+{% block content %}
+    <div style="display: flex">
+    {% for r in routes %}
+        <div class="card" style="width: 20em; max-width: 20em;margin: 2em;">
+            <header class="card-header">
+                <p class="card-header-title">
+                    <a href={{url_for(r.view)}}>
+                        {{r.title}}
+                    </a>
+                </p>
+            </header>
+
+            <div class="card-content">
+                <div class="content">
+                    {{r.description}}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+{% endblock %}
+

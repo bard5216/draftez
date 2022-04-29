@@ -1,0 +1,19 @@
+{% extends "base_w_nav.html" %}
+
+{% block content %}
+    <div class="uk-flex">
+    {% for r in routes %}
+        <div style="padding: 2em;">
+            <div class="uk-card uk-card-default uk-card-hover uk-card-body">
+                <h3 class="uk-card-title">
+                    <a href={{url_for(r.view)}}>
+                        {{r.title}}
+                    </a>
+                </h3>
+                <p>{{r.description}}</p>
+            </div>
+        </div>
+
+    {% endfor %}
+    </div>
+{% endblock %}

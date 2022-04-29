@@ -1,0 +1,4 @@
+celery beat is used to enable periodic updates.
+
+The beat service can be started as:
+celery -A wsgi beat

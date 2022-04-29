@@ -1,0 +1,30 @@
+{% extends "bulma_alpine_base.html" %}
+
+{% block content %}
+    <div style="padding: 2em;">
+        <table class="table" style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Username</th>
+                    <th>Display name</th>
+                    <th>Password</th>
+                    <th>Draft Pos</th>
+                    <th>registered</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                    <tr>
+                        <td>{{u.id}}</td>
+                        <td>{{u.username}}</td>
+                        <td>{{u.display_name}}</td>
+                        <td>{{u.password}}</td>
+                        <td>{{u.pos}}</td>
+                        <td>{{u.registerd}}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

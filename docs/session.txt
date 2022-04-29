@@ -1,0 +1,6 @@
+session['user'] is setup in views.login.login
+The user session variable is from User.as_dict_public()
+
+app.helpers.session.current_user is a proxy to the user session.
+
+current_user is available in templates via g.current_user
